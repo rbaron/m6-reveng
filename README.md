@@ -1,7 +1,7 @@
 # m6-reveng
 
 This repo contains information and tools for reverse engineering the $7 M6 smart fitness band.
-![M6 smart fitness band box](img/box.JPG)
+![M6 smart fitness band box](img/box.jpg)
 
 # Hardware
 ![M6 hardware](img/front1.jpg)
@@ -17,7 +17,7 @@ The SoC (system-on-a-chip) is a Telink [TLSR8232](http://wiki.telink-semi.cn/wik
 * SWS (Single Wire Slave) interface for debugging and programming
 
 # The Setup
-The Telink TLSR82xx series SoCs are debugged and programmed using the closed SWS (Single Wire Slave, or SWire) protocol. [pvvx](https://github.com/pvvx) did a fantastic job reverse engineering this protocol and creating an alternative programmer based on the [STM32 Blue Pill]() board. The [TlsrTools](https://github.com/pvvx/TlsrTools) project contains both the STM32 software ([SWireSTM32](https://github.com/pvvx/TlsrTools/tree/master/SWireSTM32)) and a Windows GUI application for controlling the STM32 board.
+The Telink TLSR82xx series SoCs are debugged and programmed using the closed SWS (Single Wire Slave, or SWire) protocol. [pvvx](https://github.com/pvvx) did a fantastic job reverse engineering this protocol and creating an alternative programmer based on the [STM32 Blue Pill](https://stm32duinoforum.com/forum/wiki_subdomain/index_title_Blue_Pill.html) board. The [TlsrTools](https://github.com/pvvx/TlsrTools) project contains both the STM32 software ([SWireSTM32](https://github.com/pvvx/TlsrTools/tree/master/SWireSTM32)) and a Windows GUI application for controlling the STM32 board.
 
 The TlsrTools project was developed for the TLSR826x. I originally introduced changes to this project, but later I realized our TLSR8232 chip uses the same SWS protocol. This means we can simply [flash this precompiled binary](https://github.com/pvvx/TlsrTools/tree/master/STM32F103) to our STM32 and use it as the middleman for debugging the M6.
 
