@@ -5,6 +5,7 @@ import time
 BAUD = 115200 * 2
 
 SLEEP_AFTER_RESET_IN_S = 0.02
+# This is modified when reading RAM and flash.
 SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.02
 
 RAM_SIZE = 0x010000
@@ -77,16 +78,24 @@ def write_and_read_data(request):
 def get_soc_id():
     res = write_and_read_data(make_read_request(0x007e, 2))
     return res[1] << 8 | res[0]
+    # res = write_and_read_data(make_read_request(0x007e, 1))
+    # return res[0]
 
 
 def set_speed(speed):
     """The SWS speed is set in the 0x00b2 register by means of
         specifying the number of clocks per bit."""
-    return write_and_read_data(make_write_request(0x00b0, [0x00, 0x80, speed, 0x00]))
+    # return write_and_read_data(make_write_request(0x00b0, [0x00, 0x80, speed, 0x00]))
+    return write_and_read_data(make_write_request(0x00b2, [speed]))
+
+
+def set_pgm_speed(speed):
+    return write_and_read_cmd(0x05, [speed])
 
 
 def find_suitable_sws_speed():
     for speed in range(2, 0x7f):
+        print(f'Trying speed {speed}')
         set_speed(speed)
         # Try to make a read request. If we get a valid response, assume we've
         # found a suitable SWS speed.
@@ -105,6 +114,15 @@ def send_flash_write_enable():
     write_and_read_data(make_write_request(0x0d, [0x00]))
     # Write enable.
     write_and_read_data(make_write_request(0x0c, [0x06]))
+    # CNS high.
+    write_and_read_data(make_write_request(0x0d, [0x01]))
+
+
+def send_flash_erase():
+    # CNS low.
+    write_and_read_data(make_write_request(0x0d, [0x00]))
+    # Write enable.
+    write_and_read_data(make_write_request(0x0c, [0x60]))
     # CNS high.
     write_and_read_data(make_write_request(0x0d, [0x01]))
 
@@ -135,7 +153,7 @@ def dump_ram():
 
 def read_flash(addr, chunk_size):
     contents = []
-    send_flash_write_enable()
+    # send_flash_write_enable()
     # CNS low.
     write_and_read_data(make_write_request(0x0d, [0x00]))
     # Read command.
@@ -144,23 +162,57 @@ def read_flash(addr, chunk_size):
     write_and_read_data(make_write_request(0x0c, [(addr >> 8) & 0xff]))
     write_and_read_data(make_write_request(0x0c, [addr & 0xff]))
 
+    # FIFO mode.
+    write_and_read_data(make_write_request(0xb3, [0x80]))
+
     for i in range(chunk_size):
         write_and_read_data(make_write_request(0x0c, [0xff]))
         res = write_and_read_data(make_read_request(0x0c, 1))
         assert len(res) == 1
         contents.extend(res)
 
+    # RAM mode.
+    write_and_read_data(make_write_request(0xb3, [0x00]))
+
     # CNS high.
     write_and_read_data(make_write_request(0x0d, [0x01]))
     return contents
 
 
+def write_flash(addr, data):
+    contents = []
+    send_flash_write_enable()
+
+    # CNS low.
+    write_and_read_data(make_write_request(0x0d, [0x00]))
+
+    # Write command.
+    write_and_read_data(make_write_request(0x0c, [0x02]))
+    write_and_read_data(make_write_request(0x0c, [(addr >> 16) & 0xff]))
+    write_and_read_data(make_write_request(0x0c, [(addr >> 8) & 0xff]))
+    write_and_read_data(make_write_request(0x0c, [addr & 0xff]))
+
+    # FIFO mode.
+    write_and_read_data(make_write_request(0xb3, [0x80]))
+
+    # Write data
+    # CPU stop?
+    write_and_read_data(make_write_request(0x0c, data))
+
+    # # RAM mode.
+    write_and_read_data(make_write_request(0xb3, [0x00]))
+
+    # CNS high.
+    write_and_read_data(make_write_request(0x0d, [0x01]))
+    # return contents
+
+
 def dump_flash():
     contents = []
-    print('CPU stop.')
-    send_cpu_stop()
-    print('CSN high.')
-    send_csn_high()
+    # print('CPU stop.')
+    # send_cpu_stop()
+    # print('CSN high.')
+    # send_csn_high()
 
     CHUNK_SIZE = 32
     for addr in range(0x00, FLASH_SIZE, CHUNK_SIZE):
@@ -170,7 +222,11 @@ def dump_flash():
         # Retry the same address in case something goes wrong.
         while True:
             try:
-                contents.extend(read_flash(addr, CHUNK_SIZE))
+                # contents.extend(read_flash(addr, CHUNK_SIZE))
+                res = read_flash(addr, CHUNK_SIZE)
+                print(f'Read: {res}')
+                contents.extend(res)
+                # contents.extend(read_flash(addr, 1))
                 break
             except Exception as e:
                 print(f"Retrying 0x{addr:08x}... {e}")
@@ -198,6 +254,7 @@ def init_soc(sws_speed=None):
     # will override it later when we find a suitable SWS speed.
     write_and_read_cmd(0x02, [0x00, 0x00])
 
+    set_pgm_speed(0x03)
     if sws_speed is not None:
         set_speed(sws_speed)
     else:
@@ -209,8 +266,36 @@ def dump_flash_main(args):
     print(f'Dumping flash to {args.filename}...')
     # Speed things up a little bit.
     global SLEEP_BETWEEN_READ_AND_WRITE_IN_S
-    SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.0005
+    # SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.0005
+    SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.001
     write_to_file(args.filename, dump_flash())
+
+
+def erase_flash_main(args):
+    init_soc(args.sws_speed)
+    print(f'Erasing flash...')
+    send_flash_write_enable()
+    send_flash_erase()
+    # CNS high.
+    write_and_read_data(make_write_request(0x0d, [0x01]))
+
+
+def write_flash_main(args):
+    global SLEEP_BETWEEN_READ_AND_WRITE_IN_S
+    SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.005
+
+    init_soc(args.sws_speed)
+    print(f'Writing flash from {args.filename}...')
+    CHUNK_SIZE = 32
+    with open(args.filename, 'rb') as f:
+        contents = f.read()
+        size = len(contents)
+        for addr in range(0x00, size, CHUNK_SIZE):
+            # Report progress.
+            if addr & 0xff == 0:
+                print(f'0x{addr:04x} {100 * addr / size:05.2f}%')
+            data = contents[addr:min(addr + CHUNK_SIZE, size)]
+            write_flash(addr, list(data))
 
 
 def dump_ram_main(args):
@@ -245,6 +330,13 @@ def main():
 
     get_soc_id_parser = subparsers.add_parser('get_soc_id')
     get_soc_id_parser.set_defaults(func=get_soc_id_main)
+
+    write_flash_parser = subparsers.add_parser('write_flash')
+    write_flash_parser.set_defaults(func=write_flash_main)
+    write_flash_parser.add_argument('filename', type=str)
+
+    erase_flash_parser = subparsers.add_parser('erase_flash')
+    erase_flash_parser.set_defaults(func=erase_flash_main)
 
     args = args_parser.parse_args()
 
