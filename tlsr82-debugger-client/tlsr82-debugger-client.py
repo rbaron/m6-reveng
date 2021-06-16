@@ -207,14 +207,9 @@ def write_flash(addr, data):
     # return contents
 
 
-def dump_flash():
+def dump_flash(debug):
     contents = []
-    # print('CPU stop.')
-    # send_cpu_stop()
-    # print('CSN high.')
-    # send_csn_high()
-
-    CHUNK_SIZE = 32
+    CHUNK_SIZE = 16
     for addr in range(0x00, FLASH_SIZE, CHUNK_SIZE):
         # Report progress.
         if addr & 0xff == 0:
@@ -222,11 +217,10 @@ def dump_flash():
         # Retry the same address in case something goes wrong.
         while True:
             try:
-                # contents.extend(read_flash(addr, CHUNK_SIZE))
                 res = read_flash(addr, CHUNK_SIZE)
-                print(f'Read: {res}')
+                if debug:
+                    print(f'Read: {hexdump(res)}')
                 contents.extend(res)
-                # contents.extend(read_flash(addr, 1))
                 break
             except Exception as e:
                 print(f"Retrying 0x{addr:08x}... {e}")
@@ -244,7 +238,7 @@ def init_soc(sws_speed=None):
     # Set RST to low - turns of the SoC.
     write_and_read_cmd(0x00)
     # Set RST high - starts to turn on the SoC.
-    write_and_read_cmd(0x01)
+    # write_and_read_cmd(0x01)
     # Give some time for the reset capacitor to charge and turn the chip on.
     time.sleep(SLEEP_AFTER_RESET_IN_S)
 
@@ -252,7 +246,7 @@ def init_soc(sws_speed=None):
     # in a suitable state. The STM32 will stop the Telink CPU by writing the value
     # 0x05 to Telink's 0x0602 register. It will also set a default SWS speed, but we
     # will override it later when we find a suitable SWS speed.
-    write_and_read_cmd(0x02, [0x00, 0x00])
+    write_and_read_cmd(0x02, [0x00, 0x10])
 
     set_pgm_speed(0x03)
     if sws_speed is not None:
@@ -266,9 +260,8 @@ def dump_flash_main(args):
     print(f'Dumping flash to {args.filename}...')
     # Speed things up a little bit.
     global SLEEP_BETWEEN_READ_AND_WRITE_IN_S
-    # SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.0005
     SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.001
-    write_to_file(args.filename, dump_flash())
+    write_to_file(args.filename, dump_flash(args.debug))
 
 
 def erase_flash_main(args):
@@ -285,7 +278,9 @@ def write_flash_main(args):
     SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.005
 
     init_soc(args.sws_speed)
+    time.sleep(0.02)
     print(f'Writing flash from {args.filename}...')
+
     CHUNK_SIZE = 32
     with open(args.filename, 'rb') as f:
         contents = f.read()
@@ -295,6 +290,8 @@ def write_flash_main(args):
             if addr & 0xff == 0:
                 print(f'0x{addr:04x} {100 * addr / size:05.2f}%')
             data = contents[addr:min(addr + CHUNK_SIZE, size)]
+            if args.debug:
+                print(f'writing: {hexdump(data)}')
             write_flash(addr, list(data))
 
 
@@ -303,7 +300,7 @@ def dump_ram_main(args):
     print(f'Dumping ram to {args.filename}...')
     # Speed things up a little bit.
     global SLEEP_BETWEEN_READ_AND_WRITE_IN_S
-    SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.005
+    SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.00
     write_to_file(args.filename, dump_ram())
 
 
@@ -312,12 +309,20 @@ def get_soc_id_main(args):
     print(f'SOC ID: 0x{get_soc_id():04x}')
 
 
+def cpu_run_main(args):
+    init_soc(args.sws_speed)
+    # Tell CPU to run.
+    write_and_read_data(make_write_request(0x0602, [0x88]))
+
+
 def main():
     args_parser = argparse.ArgumentParser(description='TLSR')
     args_parser.add_argument('--serial-port', type=str, required=True,
                              help="Serial port to use - this should be the USB CDC port that is connected to the STM32 (e.g.: /dev/cu.usbmodem6D8E448E55511.")
     args_parser.add_argument(
         '--sws-speed', type=int, help="SWS speed in the range [0x02, 0x7f]. If not provided, the script will try to find a suitable SWS speed automatically.")
+    args_parser.add_argument(
+        '--debug', action="store_true", help="Enabled debugging information.")
     subparsers = args_parser.add_subparsers(dest="cmd", required=True)
 
     dump_flash_parser = subparsers.add_parser('dump_flash')
@@ -337,6 +342,9 @@ def main():
 
     erase_flash_parser = subparsers.add_parser('erase_flash')
     erase_flash_parser.set_defaults(func=erase_flash_main)
+
+    erase_flash_parser = subparsers.add_parser('cpu_run')
+    erase_flash_parser.set_defaults(func=cpu_run_main)
 
     args = args_parser.parse_args()
 
