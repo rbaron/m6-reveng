@@ -274,14 +274,15 @@ def erase_flash_main(args):
 
 
 def write_flash_main(args):
-    global SLEEP_BETWEEN_READ_AND_WRITE_IN_S
-    SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.005
-
     init_soc(args.sws_speed)
     time.sleep(0.02)
     print(f'Writing flash from {args.filename}...')
 
-    CHUNK_SIZE = 32
+    global SLEEP_BETWEEN_READ_AND_WRITE_IN_S
+    # SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.008
+    SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.005
+
+    CHUNK_SIZE = 16
     with open(args.filename, 'rb') as f:
         contents = f.read()
         size = len(contents)
