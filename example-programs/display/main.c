@@ -13,7 +13,7 @@
 
 // SPI clock = SYSTEM_CLOCK / (2 * (SPI_DIV + 1))
 // So by choosing 15, we get 2 uS SPI clock period.
-#define SPI_DIV 15
+#define SPI_DIV 31
 
 // SDA/MOSI.
 #define PIN_SDA GPIO_PC3
@@ -23,6 +23,10 @@
 #define PIN_DC GPIO_PC6
 // Chip select, active low.
 #define PIN_CS GPIO_PA1
+// RST pin, active low.
+#define PIN_RST GPIO_PA0
+// LED panel catode transistor base pin, active low.
+#define PIN_LEDKBASE GPIO_PA2
 
 #define PIN_LED GPIO_PB4
 
@@ -84,6 +88,8 @@ static const tft_cmd_t tft_cmd_set_data_write = {
     .cmd = TFT_CMD_RAMWR, .args_len = 0, .args = {}};
 
 static void spi_write_data(const uint8_t *data, size_t len) {
+  // Set the SPI control register to write.
+  reg_spi_ctrl &= ~(FLD_SPI_DATA_OUT_DIS | FLD_SPI_RD);
   while (len--) {
     reg_spi_data = *data++;
     while (reg_spi_ctrl & FLD_SPI_BUSY)
@@ -114,8 +120,6 @@ static void init_spi_master(void) {
   // SDA, SCL setup.
   gpio_set_func(PIN_SDA, AS_SPI_MDO);
   gpio_set_func(PIN_SCL, AS_SPI_MCK);
-  gpio_set_input_en(PIN_SDA, 0);
-  gpio_set_input_en(PIN_SCL, 0);
   gpio_set_output_en(PIN_SDA, 1);
   gpio_set_output_en(PIN_SCL, 1);
 
@@ -130,6 +134,22 @@ static void init_spi_master(void) {
   gpio_set_input_en(PIN_DC, 0);
   gpio_set_output_en(PIN_DC, 1);
   gpio_write(PIN_DC, 0);
+
+  // LEDKBASE setup.
+  gpio_set_func(PIN_LEDKBASE, AS_GPIO);
+  gpio_set_input_en(PIN_LEDKBASE, 0);
+  gpio_set_output_en(PIN_LEDKBASE, 1);
+  gpio_write(PIN_LEDKBASE, 1);
+
+  sleep_ms(100);
+  // RST setup.
+  gpio_set_func(PIN_RST, AS_GPIO);
+  gpio_set_input_en(PIN_RST, 0);
+  gpio_set_output_en(PIN_RST, 1);
+  gpio_write(PIN_RST, 1);
+  sleep_ms(100);
+  gpio_write(PIN_RST, 0);
+  sleep_ms(100);
 }
 
 static void init_led(void) {
@@ -157,10 +177,15 @@ int main() {
   gpio_write(PIN_CS, 0);
   // Data mode, DC high.
   gpio_write(PIN_DC, 1);
-  uint8_t b = 0x66;
-  for (int i = 0; i < 1024; i++) {
+  uint8_t b = 0xff;
+  for (int i = 0; i < 32; i++) {
     spi_write_data(&b, 1);
-    // sleep_ms(10);
+    sleep_ms(10);
+  }
+  b = 0x00;
+  for (int i = 0; i < 32; i++) {
+    spi_write_data(&b, 1);
+    sleep_ms(10);
   }
   gpio_write(PIN_CS, 1);
 

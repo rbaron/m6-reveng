@@ -280,7 +280,7 @@ def write_flash_main(args):
 
     global SLEEP_BETWEEN_READ_AND_WRITE_IN_S
     # SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.008
-    SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.005
+    SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.004
 
     CHUNK_SIZE = 16
     with open(args.filename, 'rb') as f:
