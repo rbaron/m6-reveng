@@ -16,6 +16,18 @@ The SoC (system-on-a-chip) is a Telink [TLSR8232](http://wiki.telink-semi.cn/wik
 * 32kHz oscillator for low power mode
 * SWS (Single Wire Slave) interface for debugging and programming
 
+# Pin map
+| Description           | SoC pin number | SoC pin label | Comments                                                                   |
+|-----------------------|----------------|---------------|----------------------------------------------------------------------------|
+| Display SPI MOSI      | 29             | ANA_B<4>      | SPI master -> slave data                                                   |
+| Display SPI Clock     | 31             | ANA_C<5>      | SPI clock                                                                  |
+| Display SPI RS (D/C#) | 32             | ANA_C<6>      | Data select. Low means command, 1 means data                               |
+| Display SPI CS#       | 03             | ANA_A<1>      | SPI chip select, active low                                                |
+| Display RST           | 02             | ANA_A<0>      | Reset pin, active low                                                      |
+| LEDK                  | 04             | ANA_A<2>      | Display LED backlight cathode. Connected to a driver NPN transistor's base |
+
+
+
 # The Setup
 The Telink TLSR82xx series SoCs are debugged and programmed using the closed SWS (Single Wire Slave, or SWire) protocol. [pvvx](https://github.com/pvvx) did a fantastic job reverse engineering this protocol and creating an alternative programmer based on the [STM32 Blue Pill](https://stm32duinoforum.com/forum/wiki_subdomain/index_title_Blue_Pill.html) board. The [TlsrTools](https://github.com/pvvx/TlsrTools) project contains both the STM32 software ([SWireSTM32](https://github.com/pvvx/TlsrTools/tree/master/SWireSTM32)) and a Windows GUI application for controlling the STM32 board.
 
