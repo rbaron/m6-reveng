@@ -127,6 +127,20 @@ def send_flash_erase():
     write_and_read_data(make_write_request(0x0d, [0x01]))
 
 
+def send_flash_get_status():
+    # CNS low.
+    write_and_read_data(make_write_request(0x0d, [0x00]))
+    # Get flash status command.
+    write_and_read_data(make_write_request(0x0c, [0x05]))
+    # Start SPI.
+    write_and_read_data(make_write_request(0x0c, [0xff]))
+    # Read the status byte.
+    res = write_and_read_data(make_read_request(0x0c, 1))
+    # CNS high.
+    write_and_read_data(make_write_request(0x0d, [0x01]))
+    return res
+
+
 def send_cpu_stop():
     return write_and_read_data(make_write_request(0x0602, [0x05]))
 
@@ -180,7 +194,6 @@ def read_flash(addr, chunk_size):
 
 
 def write_flash(addr, data):
-    contents = []
     send_flash_write_enable()
 
     # CNS low.
@@ -204,7 +217,6 @@ def write_flash(addr, data):
 
     # CNS high.
     write_and_read_data(make_write_request(0x0d, [0x01]))
-    # return contents
 
 
 def dump_flash(debug):
@@ -246,7 +258,7 @@ def init_soc(sws_speed=None):
     # in a suitable state. The STM32 will stop the Telink CPU by writing the value
     # 0x05 to Telink's 0x0602 register. It will also set a default SWS speed, but we
     # will override it later when we find a suitable SWS speed.
-    write_and_read_cmd(0x02, [0x00, 0x10])
+    write_and_read_cmd(0x02, [0x00, 0xf0])
 
     set_pgm_speed(0x03)
     if sws_speed is not None:
@@ -269,15 +281,32 @@ def erase_flash_main(args):
     print(f'Erasing flash...')
     send_flash_write_enable()
     send_flash_erase()
+    while True:
+        res = send_flash_get_status()
+        print(f'Flash status: {hexdump(res)}')
+        if res[0] == 0:
+            break
+        time.sleep(1)
+
     # CNS high.
-    write_and_read_data(make_write_request(0x0d, [0x01]))
+    # write_and_read_data(make_write_request(0x0d, [0x01]))
 
 
 def write_flash_main(args):
     init_soc(args.sws_speed)
     time.sleep(0.02)
-    print(f'Writing flash from {args.filename}...')
 
+    print(f'Erasing flash...')
+    send_flash_write_enable()
+    send_flash_erase()
+    while True:
+        res = send_flash_get_status()
+        print(f'Flash status: {hexdump(res)}')
+        if res[0] == 0:
+            break
+        time.sleep(1)
+
+    print(f'Writing flash from {args.filename}...')
     global SLEEP_BETWEEN_READ_AND_WRITE_IN_S
     # SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.008
     SLEEP_BETWEEN_READ_AND_WRITE_IN_S = 0.005
@@ -294,6 +323,17 @@ def write_flash_main(args):
             if args.debug:
                 print(f'writing: {hexdump(data)}')
             write_flash(addr, list(data))
+
+    while True:
+        res = send_flash_get_status()
+        print(f'Flash status: {hexdump(res)}')
+        if res[0] == 0:
+            break
+        time.sleep(1)
+    # Set RST to low - turns off the SoC.
+    write_and_read_cmd(0x00)
+    # Set RST to high - turns on the SoC.
+    write_and_read_cmd(0x01)
 
 
 def dump_ram_main(args):
