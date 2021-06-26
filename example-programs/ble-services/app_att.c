@@ -21,11 +21,14 @@
  *
  *******************************************************************************************************/
 
+#include "./app_config.h"
+// Must be included after app_config.h.
 #include <stack/ble/ble.h>
 
-#include "tl_common.h"
+// #include "tl_common.h"
+// #include "app_config.h"
 
-#if (__PROJECT_5316_BLE_SAMPLE__)
+// #if (__PROJECT_5316_BLE_SAMPLE__)
 
 typedef struct {
   /** Minimum value for the connection event (interval. 0x0006 - 0x0C80 * 1.25
@@ -165,4 +168,4 @@ const attribute_t my_Attributes[] = {
 
 void my_att_init(void) { bls_att_setAttributeTable((u8 *)my_Attributes); }
 
-#endif  // end of __PROJECT_5316_BLE_SAMPLE__
+// #endif  // end of __PROJECT_5316_BLE_SAMPLE__

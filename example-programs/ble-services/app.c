@@ -29,7 +29,7 @@
 #include "vendor/common/blt_common.h"
 #include "vendor/common/keyboard.h"
 
-#if (__PROJECT_5316_BLE_SAMPLE__)
+// #if (__PROJECT_5316_BLE_SAMPLE__)
 
 #define RC_DEEP_SLEEP_EN 1
 
@@ -51,7 +51,7 @@ MYFIFO_INIT(blt_txfifo, 40, 16);
 
 /* ADV Packet, SCAN Response Packet define */
 const u8 tbl_advData[] = {
-    0x07, 0x09, 'r', 'b', 'a', 'r', 'o', '3',
+    0x07, 0x09, 'r', 'b', 'a', 'r', 'o', '4',
     // BLE limited discoverable mode and BR/EDR not supported.
     0x02, 0x01, 0x05,
     // List of service UUIDs - 0x180f => battery service.
@@ -59,7 +59,7 @@ const u8 tbl_advData[] = {
 };
 
 const u8 tbl_scanRsp[] = {
-    0x07, 0x09, 'r', 'b', 'a', 'r', 'o', '3',
+    0x07, 0x09, 'r', 'b', 'a', 'r', 'o', '4',
 };
 
 u8 user_task_flg;
@@ -429,4 +429,4 @@ void main_loop(void) {
   /* Power Management  -----------------------------------------------------*/
   blt_pm_proc();
 }
-#endif  // end of __PROJECT_5316_BLE_SAMPLE__
+// #endif  // end of __PROJECT_5316_BLE_SAMPLE__

@@ -7,7 +7,8 @@ CP = $(TC32_HOME)/bin/tc32-elf-objcopy
 
 #if(__TL_LIB_5316__ || MCU_CORE_TYPE == MCU_CORE_5316)
 #if (__PROJECT_5316_BLE_SAMPLE__)
-CCFLAGS = -Wall -std=gnu99 -DMCU_STARTUP_5316 -D__TL_LIB_5316__ -D__PROJECT_5316_BLE_SAMPLE__ -I $(SDK)/ -ffunction-sections -fdata-sections
+# CCFLAGS = -Wall -std=gnu99 -DMCU_STARTUP_5316 -D__TL_LIB_5316__ -D__PROJECT_5316_BLE_SAMPLE__ -I $(SDK)/ -ffunction-sections -fdata-sections
+CCFLAGS = -Wall -std=gnu99 -DMCU_STARTUP_5316 -D__TL_LIB_5316__ -I $(SDK)/ -ffunction-sections -fdata-sections
 
 LDFLAGS = --gc-sections -T $(SDK)/boot.link
 

@@ -71,8 +71,8 @@ typedef enum {
   //// Gap ////
   /**********************************************************************************************/
   GenericAccess_PS_H,             // UUID: 2800, 	VALUE: uuid 1800
-  GenericAccess_DeviceName_CD_H,  // UUID: 2803, 	VALUE:
-                                  // Prop: Read | Notify
+  GenericAccess_DeviceName_CD_H,  // UUID: 2803, 	VALUE:  			Prop:
+                                  // Read | Notify
   GenericAccess_DeviceName_DP_H,  // UUID: 2A00,   VALUE: device name
   GenericAccess_Appearance_CD_H,  // UUID: 2803, 	VALUE:
                                   // Prop: Read
@@ -91,11 +91,18 @@ typedef enum {
   GenericAttribute_ServiceChanged_CCB_H,  // UUID: 2902,	VALUE:
                                           // serviceChangeCCC
 
+  //// device information ////
+  /**********************************************************************************************/
+  DeviceInformation_PS_H,        // UUID: 2800, 	VALUE: uuid 180A
+  DeviceInformation_pnpID_CD_H,  // UUID: 2803, 	VALUE:
+                                 // Prop: Read
+  DeviceInformation_pnpID_DP_H,  // UUID: 2A50,	VALUE: PnPtrs
+
   //// battery service ////
   /**********************************************************************************************/
-  BATT_PS_H,               // UUID: 2800, 	VALUE: uuid 180f
-  BATT_LEVEL_INPUT_CD_H,   // UUID: 2803, 	VALUE:
-                           // Prop: Read | Notify
+  BATT_PS_H,              // UUID: 2800, 	VALUE: uuid 180f
+  BATT_LEVEL_INPUT_CD_H,  // UUID: 2803, 	VALUE:  			Prop: Read
+                          // | Notify
   BATT_LEVEL_INPUT_DP_H,   // UUID: 2A19 	VALUE: batVal
   BATT_LEVEL_INPUT_CCB_H,  // UUID: 2902, 	VALUE: batValCCC
 
