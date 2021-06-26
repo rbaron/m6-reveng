@@ -71,8 +71,8 @@ typedef enum {
   //// Gap ////
   /**********************************************************************************************/
   GenericAccess_PS_H,             // UUID: 2800, 	VALUE: uuid 1800
-  GenericAccess_DeviceName_CD_H,  // UUID: 2803, 	VALUE:  			Prop:
-                                  // Read | Notify
+  GenericAccess_DeviceName_CD_H,  // UUID: 2803, 	VALUE:
+                                  // Prop: Read | Notify
   GenericAccess_DeviceName_DP_H,  // UUID: 2A00,   VALUE: device name
   GenericAccess_Appearance_CD_H,  // UUID: 2803, 	VALUE:
                                   // Prop: Read
@@ -100,9 +100,9 @@ typedef enum {
 
   //// battery service ////
   /**********************************************************************************************/
-  BATT_PS_H,              // UUID: 2800, 	VALUE: uuid 180f
-  BATT_LEVEL_INPUT_CD_H,  // UUID: 2803, 	VALUE:  			Prop: Read
-                          // | Notify
+  BATT_PS_H,               // UUID: 2800, 	VALUE: uuid 180f
+  BATT_LEVEL_INPUT_CD_H,   // UUID: 2803, 	VALUE:
+                           // Prop: Read | Notify
   BATT_LEVEL_INPUT_DP_H,   // UUID: 2A19 	VALUE: batVal
   BATT_LEVEL_INPUT_CCB_H,  // UUID: 2902, 	VALUE: batValCCC
 
@@ -185,9 +185,6 @@ typedef enum {
 
 #endif  // end of DEBUG_GPIO_ENABLE
 
-/////////////////// set default   ////////////////
-
-// #include "../common/default_config.h"
 #include "vendor/common/default_config.h"
 
 /* Disable C linkage for C++ Compilers: */

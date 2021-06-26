@@ -29,9 +29,7 @@
 #include "vendor/common/blt_common.h"
 #include "vendor/common/keyboard.h"
 
-// #if (__PROJECT_5316_BLE_SAMPLE__)
-
-#define RC_DEEP_SLEEP_EN 1
+#define RC_DEEP_SLEEP_EN 0
 
 #define ADV_IDLE_ENTER_DEEP_TIME 60   // 60 s
 #define CONN_IDLE_ENTER_DEEP_TIME 60  // 60 s
@@ -51,15 +49,27 @@ MYFIFO_INIT(blt_txfifo, 40, 16);
 
 /* ADV Packet, SCAN Response Packet define */
 const u8 tbl_advData[] = {
-    0x07, 0x09, 'r', 'b', 'a', 'r', 'o', '4',
+    0x07,
+    0x09,
+    'r',
+    'b',
+    'a',
+    'r',
+    'o',
+    '7',
     // BLE limited discoverable mode and BR/EDR not supported.
-    0x02, 0x01, 0x05,
+    0x02,
+    0x01,
+    0x05,
     // List of service UUIDs - 0x180f => battery service.
-    0x03, 0x02, 0x0F, 0x18,  // incomplete list of service class
+    0x03,
+    0x02,
+    0x0F,
+    0x18,
 };
 
 const u8 tbl_scanRsp[] = {
-    0x07, 0x09, 'r', 'b', 'a', 'r', 'o', '4',
+    0x07, 0x09, 'r', 'b', 'a', 'r', 'o', '5',
 };
 
 u8 user_task_flg;
@@ -76,13 +86,6 @@ int ui_mtu_size_exchange_req = 0;
 
 u32 latest_user_event_tick;
 
-#if (STUCK_KEY_PROCESS_ENABLE)
-u32 stuckKey_keyPressTime;
-#endif
-
-/*----------------------------------------------------------------------------*/
-/*------------- CallBack function of BLE                      ----------------*/
-/*----------------------------------------------------------------------------*/
 void app_switch_to_indirect_adv(u8 e, u8 *p, int n) {
   bls_ll_setAdvParam(MY_ADV_INTERVAL_MIN, MY_ADV_INTERVAL_MAX,
                      ADV_TYPE_CONNECTABLE_UNDIRECTED, app_own_address_type, 0,
@@ -132,139 +135,6 @@ void task_connect(u8 e, u8 *p, int n) {
 
   interval_update_tick = clock_time() | 1;  // none zero
 }
-
-/*----------------------------------------------------------------------------*/
-/*------------- Key Function                                  ----------------*/
-/*----------------------------------------------------------------------------*/
-#if (RC_BTN_ENABLE)
-#define MAX_BTN_SIZE 2
-#define BTN_VALID_LEVEL 0
-
-#define USER_BTN_1 0x01
-#define USER_BTN_2 0x02
-
-u32 ctrl_btn[] = {SW1_GPIO, SW2_GPIO};
-u8 btn_map[MAX_BTN_SIZE] = {USER_BTN_1, USER_BTN_2};
-
-typedef struct {
-  u8 cnt;  // count button num
-  u8 btn_press;
-  u8 keycode[MAX_BTN_SIZE];  // 6 btn
-} vc_data_t;
-vc_data_t vc_event;
-
-typedef struct {
-  u8 btn_history[4];  // vc history btn save
-  u8 btn_filter_last;
-  u8 btn_not_release;
-  u8 btn_new;  // new btn  flag
-} btn_status_t;
-btn_status_t btn_status;
-
-int key_not_release;
-u8 btn_debounce_filter(u8 *btn_v) {
-  u8 change = 0;
-
-  for (int i = 3; i > 0; i--) {
-    btn_status.btn_history[i] = btn_status.btn_history[i - 1];
-  }
-  btn_status.btn_history[0] = *btn_v;
-
-  if (btn_status.btn_history[0] == btn_status.btn_history[1] &&
-      btn_status.btn_history[1] == btn_status.btn_history[2] &&
-      btn_status.btn_history[0] != btn_status.btn_filter_last) {
-    change = 1;
-
-    btn_status.btn_filter_last = btn_status.btn_history[0];
-  }
-
-  return change;
-}
-
-u8 vc_detect_button(int read_key) {
-  u8 btn_changed, i;
-  memset(&vc_event, 0, sizeof(vc_data_t));  // clear vc_event
-  // vc_event.btn_press = 0;
-
-  for (i = 0; i < MAX_BTN_SIZE; i++) {
-    if (BTN_VALID_LEVEL != !gpio_read(ctrl_btn[i])) {
-      vc_event.btn_press |= BIT(i);
-    }
-  }
-
-  btn_changed = btn_debounce_filter(&vc_event.btn_press);
-
-  if (btn_changed && read_key) {
-    for (i = 0; i < MAX_BTN_SIZE; i++) {
-      if (vc_event.btn_press & BIT(i)) {
-        vc_event.keycode[vc_event.cnt++] = btn_map[i];
-      }
-    }
-    return 1;
-  }
-
-  return 0;
-}
-
-void proc_button(void) {
-  static u32 button_det_tick;
-  if (clock_time_exceed(button_det_tick, 5000)) {
-    button_det_tick = clock_time();
-  } else {
-    return;
-  }
-
-  //	static u32 button_history = 0;
-  //	static u32 last_singleKey_press_tick;
-
-  static int button1_press_flag;
-  static u32 button1_press_tick;
-  static int button2_press_flag;
-  static u32 button2_press_tick;
-
-  static int consumer_report = 0;
-
-  int det_key = vc_detect_button(1);
-
-  if (det_key)  // key change: press or release
-  {
-    key_not_release = 1;
-    u8 key0 = vc_event.keycode[0];
-    // u8 key1 = vc_event.keycode[1];
-
-    if (vc_event.cnt == 2)  // two key press
-    {
-    } else if (vc_event.cnt == 1)  // one key press
-    {
-      if (key0 == USER_BTN_1) {
-        button1_press_flag = 1;
-        button1_press_tick = clock_time();
-        u16 consumer_key = MKEY_VOL_UP;
-        bls_att_pushNotifyData(HID_CONSUME_REPORT_INPUT_DP_H,
-                               (u8 *)&consumer_key, 2);
-        consumer_report = 1;
-      } else if (key0 == USER_BTN_2) {
-        button2_press_flag = 1;
-        button2_press_tick = clock_time();
-        u16 consumer_key = MKEY_VOL_DN;
-        bls_att_pushNotifyData(HID_CONSUME_REPORT_INPUT_DP_H,
-                               (u8 *)&consumer_key, 2);
-        consumer_report = 1;
-      }
-    } else {  // release
-      key_not_release = 0;
-      button1_press_flag = 0;
-      button2_press_flag = 0;
-      if (consumer_report) {
-        consumer_report = 0;
-        u16 consumer_key = 0;
-        bls_att_pushNotifyData(HID_CONSUME_REPORT_INPUT_DP_H,
-                               (u8 *)&consumer_key, 2);
-      }
-    }
-  }
-}
-#endif
 
 //_attribute_ram_code_
 void blt_pm_proc(void) {
@@ -324,45 +194,25 @@ void ble_remote_set_sleep_wakeup(u8 e, u8 *p,
 }
 
 void user_init() {
-  /*
-   ***************************************************************************
-   * Keyboard matrix initialization. These section must be before
-   *battery_power_check. Because when low battery,chip will entry deep.if placed
-   *after battery_power_check, it is possible that can not wake up chip.
-   ***************************************************************************
-   */
-#if (RC_BTN_ENABLE)
-  for (int i = 0; i < (sizeof(ctrl_btn) / sizeof(*ctrl_btn)); i++) {
-    gpio_set_wakeup(ctrl_btn[i], 0,
-                    1);  // drive pin core(gpio) high wakeup suspend
-    cpu_set_gpio_wakeup(ctrl_btn[i], 0,
-                        1);  // drive pin pad high wakeup deepsleep
-  }
-#endif
+  gpio_set_func(GPIO_PB4, AS_GPIO);
+  gpio_set_output_en(GPIO_PB4, 1);
+  gpio_set_input_en(GPIO_PB4, 0);
+  gpio_write(GPIO_PB4, 1);
 
-  /*-- BLE stack initialization --------------------------------------------*/
   u8 mac_public[6];
   u8 mac_random_static[6];
   blc_initMacAddress(CFG_ADR_MAC, mac_public, mac_random_static);
 
-#if (BLE_DEVICE_ADDRESS_TYPE == BLE_DEVICE_ADDRESS_PUBLIC)
   app_own_address_type = OWN_ADDRESS_PUBLIC;
-#elif (BLE_DEVICE_ADDRESS_TYPE == BLE_DEVICE_ADDRESS_RANDOM_STATIC)
-  app_own_address_type = OWN_ADDRESS_RANDOM;
-  blc_ll_setRandomAddr(mac_random_static);
-#endif
 
-  /*-- BLE Controller initialization ---------------------------------------*/
-  blc_ll_initBasicMCU(mac_public);  // mandatory
-  blc_ll_initAdvertising_module(
-      mac_public);                // adv module: mandatory for BLE slave,
-  blc_ll_initSlaveRole_module();  // slave module: mandatory for BLE slave,
+  blc_ll_initBasicMCU(mac_public);
+  blc_ll_initAdvertising_module(mac_public);
+  blc_ll_initSlaveRole_module();
 
-  /*-- BLE Host initialization ---------------------------------------------*/
   extern void my_att_init(void);
-  // GATT initialization
+  // Initialize attribute table.
   my_att_init();
-  // L2CAP initialization
+  // L2CAP initialization.
   blc_l2cap_register_handler(blc_l2cap_packet_receive);
 
   /*-- BLE SMP initialization ----------------------------------------------*/
@@ -375,9 +225,7 @@ void user_init() {
   bls_smp_enableParing(SMP_PARING_DISABLE_TRRIGER);
 #endif
 
-  // HID_service_on_android7p0_init();  //hid device on android 7.0/7.1
-
-  /*-- USER application initialization -------------------------------------*/
+  // Set advertisement data.
   bls_ll_setAdvData((u8 *)tbl_advData, sizeof(tbl_advData));
   bls_ll_setScanRspData((u8 *)tbl_scanRsp, sizeof(tbl_scanRsp));
 
@@ -391,10 +239,11 @@ void user_init() {
       ;
   }
 
-  bls_ll_setAdvEnable(1);                     // adv enable
-  rf_set_power_level_index(RF_POWER_7P9dBm);  // OK
+  // Start advertising.
+  bls_ll_setAdvEnable(1);
+  rf_set_power_level_index(RF_POWER_7P9dBm);
 
-  // ble event call back
+  // Set BLE callbacks.
   bls_app_registerEventCallback(BLT_EV_FLAG_CONNECT, &task_connect);
   bls_app_registerEventCallback(BLT_EV_FLAG_TERMINATE, &ble_remote_terminate);
 
@@ -429,4 +278,3 @@ void main_loop(void) {
   /* Power Management  -----------------------------------------------------*/
   blt_pm_proc();
 }
-// #endif  // end of __PROJECT_5316_BLE_SAMPLE__

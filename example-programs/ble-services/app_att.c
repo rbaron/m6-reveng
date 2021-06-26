@@ -25,11 +25,6 @@
 // Must be included after app_config.h.
 #include <stack/ble/ble.h>
 
-// #include "tl_common.h"
-// #include "app_config.h"
-
-// #if (__PROJECT_5316_BLE_SAMPLE__)
-
 typedef struct {
   /** Minimum value for the connection event (interval. 0x0006 - 0x0C80 * 1.25
    * ms) */
@@ -61,9 +56,10 @@ const u16 my_PnPUUID = CHARACTERISTIC_UUID_PNP_ID;
 
 const u16 my_devNameUUID = GATT_UUID_DEVICE_NAME;
 
-// device information
+// Device information service UUID.
 const u16 my_gapServiceUUID = SERVICE_UUID_GENERIC_ACCESS;
-// Appearance Characteristic Properties
+
+// Appearance characteristic.
 const u16 my_appearanceUIID = 0x2a01;
 const u16 my_periConnParamUUID = 0x2a04;
 u16 my_appearance = GAP_APPEARE_UNKNOWN;
@@ -78,8 +74,7 @@ const u8 my_devName[] = {'r', 'b', 'a', 'r', 'o', 'n'};
 
 const u8 my_PnPtrs[] = {0x02, 0x8a, 0x24, 0x66, 0x82, 0x01, 0x00};
 
-//////////////////////// Battery
-////////////////////////////////////////////////////
+// Battery service.
 const u16 my_batServiceUUID = SERVICE_UUID_BATTERY;
 const u16 my_batCharUUID = CHARACTERISTIC_UUID_BATTERY_LEVEL;
 static u8 batteryValueInCCC[2];
@@ -119,6 +114,11 @@ static const u8 my_batCharVal[5] = {
     U16_HI(BATT_LEVEL_INPUT_DP_H), U16_LO(CHARACTERISTIC_UUID_BATTERY_LEVEL),
     U16_HI(CHARACTERISTIC_UUID_BATTERY_LEVEL)};
 
+int cb(void *p) {
+  gpio_toggle(GPIO_PB4);
+  return 0;
+}
+
 const attribute_t my_Attributes[] = {
 
     {ATT_END_H - 1, 0, 0, 0, 0, 0},  // total num of attribute
@@ -149,23 +149,23 @@ const attribute_t my_Attributes[] = {
     {0, ATT_PERMISSIONS_RDWR, 2, sizeof(serviceChangeCCC),
      (u8 *)(&clientCharacterCfgUUID), (u8 *)(serviceChangeCCC), 0},
 
-    ////////////////////////////////////// Battery Service
-    ////////////////////////////////////////////////////////
-    // 002a - 002d
+    // Battery service.
     // Service UUID: 0x180f
+
+    // my_primaryServiceUUID: 0x2800 - Service declaration.
     {4, ATT_PERMISSIONS_READ, 2, 2, (u8 *)(&my_primaryServiceUUID),
      (u8 *)(&my_batServiceUUID), 0},
     // Characteristic UUID: 0x2803
     {0, ATT_PERMISSIONS_READ, 2, sizeof(my_batCharVal),
      (u8 *)(&my_characterUUID), (u8 *)(my_batCharVal), 0},
     // batChar UUID: 0x2a19
+    // {0, ATT_PERMISSIONS_READ, 2, sizeof(my_batVal), (u8 *)(&my_batCharUUID),
+    //  (u8 *)(my_batVal), 0},
     {0, ATT_PERMISSIONS_READ, 2, sizeof(my_batVal), (u8 *)(&my_batCharUUID),
-     (u8 *)(my_batVal), 0},  // value
+     (u8 *)(my_batVal), &cb, &cb},
     // clientCharacterCfgUUID: 0x2902
     {0, ATT_PERMISSIONS_RDWR, 2, sizeof(batteryValueInCCC),
      (u8 *)(&clientCharacterCfgUUID), (u8 *)(batteryValueInCCC), 0},  // value
 };
 
 void my_att_init(void) { bls_att_setAttributeTable((u8 *)my_Attributes); }
-
-// #endif  // end of __PROJECT_5316_BLE_SAMPLE__
