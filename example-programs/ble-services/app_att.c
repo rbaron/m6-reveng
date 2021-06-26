@@ -1,26 +1,3 @@
-/********************************************************************************************************
- * @file     app_att.c
- *
- * @brief    for TLSR chips
- *
- * @author	 BLE Group
- * @date     May. 12, 2018
- *
- * @par      Copyright (c) Telink Semiconductor (Shanghai) Co., Ltd.
- *           All rights reserved.
- *
- *			 The information contained herein is confidential and
- *proprietary property of Telink Semiconductor (Shanghai) Co., Ltd. and is
- *available under the terms of Commercial License Agreement between Telink
- *Semiconductor (Shanghai) Co., Ltd. and the licensee in separate contract or
- *the terms described here-in. This heading MUST NOT be removed from this file.
- *
- * 			 Licensees are granted free, non-transferable use of the
- *information in this file under Mutual Non-Disclosure Agreement. NO WARRENTY of
- *ANY KIND is provided.
- *
- *******************************************************************************************************/
-
 #include "./app_config.h"
 // Must be included after app_config.h.
 #include <stack/ble/ble.h>
@@ -151,7 +128,6 @@ const attribute_t my_Attributes[] = {
 
     // Battery service.
     // Service UUID: 0x180f
-
     // my_primaryServiceUUID: 0x2800 - Service declaration.
     {4, ATT_PERMISSIONS_READ, 2, 2, (u8 *)(&my_primaryServiceUUID),
      (u8 *)(&my_batServiceUUID), 0},
