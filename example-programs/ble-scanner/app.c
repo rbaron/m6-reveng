@@ -96,11 +96,10 @@ int hci_event_handle(u32 h, u8 *para, int n) {
       uart_printf(uart_send_buff, "%02x:%02x:%02x:%02x:%02x:%02x\n",
                   adv->mac[5], adv->mac[4], adv->mac[3], adv->mac[2],
                   adv->mac[1], adv->mac[0]);
-      if (adv->event_type ==)
-        // for (int i = 0; i < adv->len; i++) {
-        //   uart_printf(uart_send_buff, "%02x ", adv->data[i]);
-        // }
-        uart_printf(uart_send_buff, "\n");
+      for (int i = 0; i < adv->len; i++) {
+        uart_printf(uart_send_buff, "%02x ", adv->data[i]);
+      }
+      uart_printf(uart_send_buff, "\n");
     }
   }
   return 0;
